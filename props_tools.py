@@ -774,26 +774,32 @@ def skin_geometry(oJoints, oGeo, pName):
 
 @undo
 def reset_skin(oColl):
+    #TODO: Test and make sure oColl can be transforms or shapes.
     # first, check for shapes vs. transforms. Let the user pick any mix
-    gatherShapes = [x.getParent() for x in oColl if type(x) == pm.nodetypes.Mesh]
-    gatherTransforms = [x for x in oColl if type(x) == pm.nodetypes.Transform if x.getShape()]
-    firstFilter = gatherTransforms + gatherShapes
-    geoFilter = [x for x in firstFilter if type(x.getShape()) == pm.nodetypes.Mesh]
+    #gatherShapes = [x.getParent() for x in oColl if type(x) == pm.nodetypes.Mesh]
+    #gatherTransforms = [x for x in oColl if type(x) == pm.nodetypes.Transform if x.getShape()]
+    #firstFilter = gatherTransforms + gatherShapes
+    #geoFilter = [x for x in firstFilter if type(x.getShape()) == pm.nodetypes.Mesh]
 
-    for geo in geoFilter:
-        _skinCluster = [x for x in geo.getShape().inputs() if type(x) == pm.nodetypes.SkinCluster][0]
-        skinJointList = pm.listConnections(_skinCluster.matrix, t='joint')
-
-        bindPose = pm.listConnections(skinJointList[0].name(), d=True, s=False, t='dagPose')
-
-        if not bindPose == None:
-            if not (pm.referenceQuery(bindPose[0], inr=True)):
-                pm.delete(bindPose[0])
-
-        sourceGeo = pm.skinCluster(_skinCluster, q=True, g=True)[0]
-        pm.skinCluster(_skinCluster, e=True, ubk=True)
-        pm.select(skinJointList, r=True)
-        pm.skinCluster(skinJointList, sourceGeo, ibp=True, tsb=True)
+    oldSel = pm.selected()
+    for eachGeo in oColl:
+        skinInputs = eachGeo.getShape().listHistory(interestLevel=1, type='skinCluster')
+        # filters out the bug where if a geo has a lattice which is skinned,
+        # you get the lattice influences back instead.
+        correctSkins = [
+            skin for skin in skinInputs
+            if eachGeo.name() in [sk.getTransform().name() for sk in skin.getGeometry()]
+            ]
+        for oSkin in correctSkins:        
+            skinJointList = pm.listConnections(oSkin.matrix, t='joint')
+            bindPose = pm.listConnections(skinJointList[0].name(), d=True, s=False, t='dagPose')
+            if bindPose:
+                if not (pm.referenceQuery(bindPose[0], inr=True)):
+                    pm.delete(bindPose[0])
+            sourceGeo = pm.skinCluster(oSkin, q=True, g=True)[0]
+            pm.skinCluster(oSkin, e=True, ubk=True)
+            pm.skinCluster(skinJointList, sourceGeo, ibp=True, tsb=True)
+    pm.select(oldSel)
 
 
 @undo
