@@ -3,6 +3,15 @@ import maya.cmds as cmds
 
 ### COLOR RGB TOOL
 
+'''
+Tool ideas:
+    - A button to convert existing controllers to their rgb counter-parts.
+    - A button to turn off RGB and revert to index.
+    - Finish a way to call the colors by alias names.
+    - Have some empty palette slots to add your own custom colors.
+    - Add a get function too, so you can match colors from source objects.
+'''
+
 class ColorToolRGB(object):
     def __init__(self):
         self.name = 'colorToolRGBUI'
