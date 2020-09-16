@@ -50,7 +50,7 @@ class ColorToolRGB(object):
                 with pm.horizontalLayout() as layout:
                     for i, eachColor in enumerate(self._COLORS[0+(5*row):5+(5*row)]):
                         with pm.verticalLayout() as buttonLayout:
-                            colorName, rgbColor, indexColor = eachColor
+                            colorName, rgbColor, indexOverride = eachColor
                             btn = pm.button(
                                     label = str(i+(5*row)),
                                     command = pm.Callback (self.set_color, [], i+(5*row) ),
@@ -63,26 +63,30 @@ class ColorToolRGB(object):
         pm.showWindow()
         
 
-    def set_color_by_index(self, oColl, color):
+    def set_color(self, oColl, color):
+        # Add error handling for numbers out of range, or missing name keys.
         if isinstance(color, int):
-            colorIndex = color
+            colorNumber = color
         if isinstance(color, basestring):
-            colorIndex = get_color_index(self, color)
+            colorNumber = color_index_from_name(self, color)
 
-        print('Setting color: {}'.format(color))
+        print('Setting color: {}'.format(colorNumber))
+        colorName, rgbColor, indexOverride = self._COLORS[colorNumber]
+        print(colorName, rgbColor, indexOverride)
         return None
+
         for each in oColl:
             eachShape = each.getTransform().getShape()
             eachShape.overrideEnabled.set(True)
             eachShape.overrideRGBColors.set(True)
-            eachShape.overrideColorRGB.set(self._COLORS[color][1])
-            eachShape.overrideColor.set(self._COLORS[color][2])
+            eachShape.overrideColorRGB.set(rgbColor)
+            eachShape.overrideColor.set(indexOverride)
 
 
-    def get_color_index(self, oColl, color):
+    def color_index_from_name(self, oColl, color):
         return None
-        #TODO: Get the name from a list of aliases. Find the index.
-        colorIndex = 0
-        return colorIndex
+        #TODO: Get the color number from a list of aliases. Allow 'darkred', 'Dark Red', 'dark red', etc.
+        colorNumber = 0
+        return colorNumber
 
 
