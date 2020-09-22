@@ -19,6 +19,7 @@ class ColorToolRGB(object):
         self.version = 0.1
         self.author = 'Chris Lesage - https://rigmarolestudio.com'
 
+        #TODO: Some of the colors should be closer to original. Cyan, pink. I made them too faded.
         self._COLORS = [
             # RGB values from 0.0 to 1.0
             # [name, RGB, fallback index for standard Maya colors]
@@ -42,10 +43,46 @@ class ColorToolRGB(object):
          
             [ 'black',        [0.000, 0.000, 0.000],   1 ], #15
             [ 'darkbrown',    [0.279, 0.184, 0.000],  24 ], #16
-            [ 'orange',       [1.000, 0.400, 0.000],  21 ], #17
+            [ 'orange',       [1.000, 0.200, 0.000],  21 ], #17
             [ 'lightpurple',  [0.828, 0.213, 0.949],   9 ], #18
             [ 'grey4',        [0.721, 0.789, 0.825],  16 ], #19
         ]
+
+        # Which color to choose when translating existing index colors to RGB
+        self.indexToName = {
+            0: None,
+            1: 15, # black
+            2: 4, # grey1
+            3: 14, # grey3
+            4: 10, # darkred
+            5: 5, # darkblue
+            6: 2, # blue
+            7: 3, # green
+            8: 13, # purple,
+            9: 18, # lightpurple
+            10: 10, # darkred
+            11: 16, # darkbrown
+            12: 10, # darkred
+            13: 0, # red
+            14: 8, # lightgreen
+            15: 2, # blue
+            16: 19, # grey4
+            17: 1, # yellow
+            18: 7, # lightblue
+            19: 8, # lightgreen
+            20: 5, # pink
+            21: 11, # brown
+            22: 6, # lightyellow
+            23: 8, # lightgreen
+            24: 16, # darkbrown
+            25: 6, # lightyellow
+            26: 8, # lightgreen
+            27: 3, # green
+            28: 7, # lightblue
+            29: 2, # blue
+            30: 13, # purple
+            31: 10, # darkred
+            }
 
         self.create_ui()
 
@@ -55,22 +92,31 @@ class ColorToolRGB(object):
             pm.deleteUI(self.name)
             
         with pm.window(self.name, title=self.title + " v" + str(self.version), width=200, menuBar=True) as win:
-            for row in range(4):
-                with pm.horizontalLayout() as layout:
-                    for i, eachColor in enumerate(self._COLORS[0+(5*row):5+(5*row)]):
-                        with pm.verticalLayout() as buttonLayout:
-                            colorName, rgbColor, indexOverride = eachColor
-                            btn = pm.button(
-                                    label = str(i+(5*row)),
-                                    command = pm.Callback (self.set_color, [], i+(5*row) ),
-                                    backgroundColor=(rgbColor),
-                                    )
-                            txt = pm.text(label=colorName)
-                        buttonLayout.redistribute(40,10)
-                layout.redistribute()
+            with pm.verticalLayout() as mainLayout:
+                for row in range(4):
+                    with pm.horizontalLayout() as layout:
+                        for i, eachColor in enumerate(self._COLORS[0+(5*row):5+(5*row)]):
+                            with pm.verticalLayout() as buttonLayout:
+                                colorName, rgbColor, indexOverride = eachColor
+                                btn = pm.button(
+                                        label = str(i+(5*row)),
+                                        command = pm.Callback (self.set_color_button, i+(5*row) ),
+                                        backgroundColor=(rgbColor),
+                                        )
+                                txt = pm.text(label=colorName)
+                            buttonLayout.redistribute(40,10)
+                    layout.redistribute()
+                with pm.horizontalLayout() as bottomButtons:
+                    pm.button(label='Switch to RGB', command = pm.Callback(self.switch_to_rgb))
+                    pm.button(label='Turn OFF RGB', command = pm.Callback(self.turn_off_rgb))
+            mainLayout.redistribute(20, 20, 20, 20, 10)
             
         pm.showWindow()
         
+
+    def set_color_button(self, color):
+        self.set_color(pm.selected(), color)
+
 
     def set_color(self, oColl, color):
         # Add error handling for numbers out of range, or missing name keys.
@@ -82,14 +128,36 @@ class ColorToolRGB(object):
         print('Setting color: {}'.format(colorNumber))
         colorName, rgbColor, indexOverride = self._COLORS[colorNumber]
         print(colorName, rgbColor, indexOverride)
-        return None
 
         for each in oColl:
-            eachShape = each.getTransform().getShape()
-            eachShape.overrideEnabled.set(True)
-            eachShape.overrideRGBColors.set(True)
-            eachShape.overrideColorRGB.set(rgbColor)
-            eachShape.overrideColor.set(indexOverride)
+            if isinstance(each, pm.nodetypes.Transform):
+                for eachShape in each.getShapes():
+                    eachShape.overrideEnabled.set(True)
+                    eachShape.overrideColor.set(indexOverride)
+                    eachShape.overrideRGBColors.set(True)
+                    eachShape.overrideColorRGB.set(rgbColor)
+            #TODO: I'll have to check BOTH the transform and the shape for overrides.
+            if isinstance(each, pm.nodetypes.Shape):
+                each.overrideEnabled.set(True)
+                each.overrideColor.set(indexOverride)
+                each.overrideRGBColors.set(True)
+                each.overrideColorRGB.set(rgbColor)
+
+
+    def switch_to_rgb(self):
+        for each in pm.selected():
+            trx = each.getTransform()
+            for eachShape in trx.getShapes():
+                # If override is off, skip this
+                if eachShape.overrideEnabled.get() == False:
+                    continue
+                # Get the rgb name from the indexOverride of the index color
+                rgbEquivalent = self.indexToName[eachShape.overrideColor.get()]
+                if rgbEquivalent != None:
+                    self.set_color([eachShape], rgbEquivalent)
+    
+    def turn_off_rgb(self):
+        pass
 
 
     def color_index_from_name(self, oColl, color):
