@@ -10,16 +10,19 @@ Tool ideas:
     - Finish a way to call the colors by alias names.
     - Have some empty palette slots to add your own custom colors.
     - Add a get function too, so you can match colors from source objects.
+    - Some functionality for dealing with transforms vs. shapes? Right click for transforms?
+    - A connected-palette system, where editing the swatch updates all connected shapes.
 '''
 
 class ColorToolRGB(object):
     def __init__(self):
-        self.name = 'colorToolRGBUI'
+        self.name = 'rgbColorToolGUI'
         self.title = 'RGB Color Tool'
-        self.version = 0.1
+        self.version = 0.2
         self.author = 'Chris Lesage - https://rigmarolestudio.com'
 
         #TODO: Some of the colors should be closer to original. Cyan, pink. I made them too faded.
+        #TODO: Can I restructure the color data as a class? Would that help? Conversions become methods.
         self._COLORS = [
             # RGB values from 0.0 to 1.0
             # [name, RGB, fallback index for standard Maya colors]
